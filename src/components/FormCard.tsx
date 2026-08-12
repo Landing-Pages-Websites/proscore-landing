@@ -19,6 +19,9 @@ const EMAIL_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
 // NANP: area code & exchange each start 2-9 and may not be an N11.
 const NANP_RE = /^[2-9](?!11)\d{2}[2-9](?!11)\d{2}\d{4}$/;
 
+const SUBMIT_ERROR_MESSAGE =
+  "Something went wrong sending your request. Please try again, or email us at info@proscore.ai.";
+
 type FieldKey = "firstName" | "lastName" | "email" | "phone" | "complianceTimeline";
 
 interface FormState {
@@ -122,6 +125,7 @@ export function FormCard({
   const [touched, setTouched] = useState<Partial<Record<FieldKey, boolean>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Synchronous re-entrancy latch, blocks duplicate fires from rapid clicks
   // before React re-renders with the disabled state.
@@ -195,13 +199,14 @@ export function FormCard({
     }
     inFlightRef.current = true;
     setSubmitting(true);
+    setSubmitError(null);
     const qualifying = isQualifying(data.complianceTimeline);
     const leadTier: "qualified" | "nurture" = qualifying ? "qualified" : "nurture";
     const route =
       routeSlug ||
       (typeof window !== "undefined" ? window.location.pathname : "/");
     try {
-      await submit({
+      const res = await submit({
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
         email: data.email.trim(),
@@ -211,13 +216,18 @@ export function FormCard({
         leadTier,
         route_slug: route,
       });
+      // A 2xx with a body that isn't {ok:true} is still a dropped lead. Only
+      // confirmed success fires conversions and shows the thank-you card.
+      if (res?.ok !== true) {
+        throw new Error("Submission not confirmed by server.");
+      }
       fireTracking(leadTier, route);
       setSubmitted(true);
     } catch (err) {
       console.error("Form submission error:", err);
-      // Still fire tracking + show thank-you so the user isn't stranded.
-      fireTracking(leadTier, route);
-      setSubmitted(true);
+      // The visitor is fine, but the LEAD would be dropped: surface a retryable
+      // error and fire NO tracking so we never bill a phantom conversion.
+      setSubmitError(SUBMIT_ERROR_MESSAGE);
     } finally {
       inFlightRef.current = false;
       setSubmitting(false);
@@ -426,6 +436,16 @@ export function FormCard({
           disabled={submitting}
         />
       </div>
+
+      {submitError && (
+        <p
+          role="alert"
+          aria-live="polite"
+          className="lp-field-error !mt-0 rounded-lg border border-[var(--color-error)]/35 bg-[#fef3f2] px-3.5 py-2.5"
+        >
+          {submitError}
+        </p>
+      )}
 
       <button
         type="button"
