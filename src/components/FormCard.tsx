@@ -2,13 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useMegaLeadForm } from "@/hooks/useMegaLeadForm";
-import {
-  CTA,
-  PHONE,
-  TIRE_BRANDS,
-  REVENUE_OPTIONS,
-  EMPLOYEE_OPTIONS,
-} from "@/lib/content";
+import { CTA, COMPLIANCE_TIMELINE_OPTIONS } from "@/lib/content";
 import { Icon } from "@/components/icons";
 
 declare global {
@@ -20,34 +14,20 @@ declare global {
   }
 }
 
-// ─── Validation (HARD RULE #8 — inline per-field, no native tooltips) ───
-
-// RFC-5322-lite — the lead API server-validates the rest.
+// ─── Validation (inline per-field, no native tooltips) ───
 const EMAIL_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
-
 // NANP: area code & exchange each start 2-9 and may not be an N11.
 const NANP_RE = /^[2-9](?!11)\d{2}[2-9](?!11)\d{2}\d{4}$/;
 
-// Only these fields block submission. companyWebsite + primaryTireBrand are
-// optional. annualRevenue "Under $2M" and employeeCount "Under 5" are
-// REPORTING-ONLY answers — required to be chosen, but never disqualifying.
-type FieldKey =
-  | "firstName"
-  | "lastName"
-  | "email"
-  | "phone"
-  | "annualRevenue"
-  | "employeeCount";
+type FieldKey = "firstName" | "lastName" | "email" | "phone" | "complianceTimeline";
 
 interface FormState {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  companyWebsite: string;
-  primaryTireBrand: string;
-  annualRevenue: string;
-  employeeCount: string;
+  complianceTimeline: string;
+  discussionTopic: string;
 }
 
 const INITIAL: FormState = {
@@ -55,10 +35,8 @@ const INITIAL: FormState = {
   lastName: "",
   email: "",
   phone: "",
-  companyWebsite: "",
-  primaryTireBrand: "",
-  annualRevenue: "",
-  employeeCount: "",
+  complianceTimeline: "",
+  discussionTopic: "",
 };
 
 type FieldErrors = Partial<Record<FieldKey, string>>;
@@ -68,8 +46,7 @@ const REQUIRED_ORDER: FieldKey[] = [
   "lastName",
   "email",
   "phone",
-  "annualRevenue",
-  "employeeCount",
+  "complianceTimeline",
 ];
 
 function validateField(key: FieldKey, value: string): string | undefined {
@@ -91,10 +68,8 @@ function validateField(key: FieldKey, value: string): string | undefined {
       if (!NANP_RE.test(digits)) return "Please enter a valid US phone number.";
       return undefined;
     }
-    case "annualRevenue":
-      return value ? undefined : "Please select your annual revenue.";
-    case "employeeCount":
-      return value ? undefined : "Please select your team size.";
+    case "complianceTimeline":
+      return value ? undefined : "Please choose a timeline.";
   }
 }
 
@@ -115,6 +90,12 @@ function formatPhone(value: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
+function isQualifying(timeline: string): boolean {
+  return COMPLIANCE_TIMELINE_OPTIONS.some(
+    (o) => o.value === timeline && o.qualifying
+  );
+}
+
 interface FormCardProps {
   idPrefix?: string;
   eyebrow?: string;
@@ -127,12 +108,12 @@ interface FormCardProps {
 
 export function FormCard({
   idPrefix = "hero",
-  eyebrow = "Request your free demo",
-  heading = "See TireServ mapped to your operation",
-  subheading = "No cost, no commitment — every request gets a response within one business day.",
-  submitLabel = CTA.primary,
+  eyebrow = "Free compliance assessment",
+  heading = "See your compliance exposure",
+  subheading = "No cost, no obligation. A ProScore compliance specialist follows up by email.",
+  submitLabel = CTA.primaryLong,
   routeSlug,
-  thankYouBody = "Thanks — your demo request is in. A member of the QBC Systems team will reach out within one business day to schedule a walkthrough built around your operation.",
+  thankYouBody = "Your request is in. A ProScore compliance specialist will follow up by email to schedule your free compliance assessment, built around your projects.",
 }: FormCardProps) {
   const { submit } = useMegaLeadForm();
 
@@ -142,7 +123,7 @@ export function FormCard({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Synchronous re-entrancy guard — blocks duplicate fires from rapid clicks
+  // Synchronous re-entrancy latch, blocks duplicate fires from rapid clicks
   // before React re-renders with the disabled state.
   const inFlightRef = useRef(false);
   const fieldRefs = useRef<Partial<Record<FieldKey, HTMLElement | null>>>({});
@@ -152,9 +133,7 @@ export function FormCard({
     setErrors((prev) => {
       if (!(k in prev)) return prev;
       const key = k as FieldKey;
-      if (!prev[key]) return prev;
-      const err = validateField(key, v);
-      if (err) return prev;
+      if (!prev[key] || validateField(key, v)) return prev;
       const next = { ...prev };
       delete next[key];
       return next;
@@ -172,14 +151,29 @@ export function FormCard({
     });
   };
 
-  const fireTracking = () => {
+  const fireTracking = (leadTier: "qualified" | "nurture", route: string) => {
     if (typeof window === "undefined") return;
-    const route =
-      routeSlug || (typeof window !== "undefined" ? window.location.pathname : "/");
+    const base = { form_route: route, lead_tier: leadTier };
     // Mega optimizer event FIRST, then the GTM dataLayer signal.
-    window.MegaTag?.trackEvent?.("form_submit", { form_route: route });
+    window.MegaTag?.trackEvent?.("form_submit", base);
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event: "form_submit", form_route: route });
+    window.dataLayer.push({ event: "form_submit", ...base });
+    // Qualified-lead optimization event only for qualifying timelines.
+    if (leadTier === "qualified") {
+      window.MegaTag?.trackEvent?.("qualified_lead", base);
+      window.dataLayer.push({ event: "qualified_lead", ...base });
+    }
+  };
+
+  const focusFirstBad = (allErrors: FieldErrors) => {
+    const firstBad = REQUIRED_ORDER.find((k) => allErrors[k]);
+    if (!firstBad) return;
+    const el = fieldRefs.current[firstBad];
+    try {
+      el?.focus({ preventScroll: false });
+    } catch {
+      el?.focus();
+    }
   };
 
   // Validate FIRST, then submit. Button is type="button" so the optimizer's
@@ -194,87 +188,56 @@ export function FormCard({
         lastName: true,
         email: true,
         phone: true,
-        annualRevenue: true,
-        employeeCount: true,
+        complianceTimeline: true,
       });
-      const firstBad = REQUIRED_ORDER.find((k) => allErrors[k]);
-      if (firstBad) {
-        const el = fieldRefs.current[firstBad];
-        try {
-          (el as HTMLElement | null)?.focus({ preventScroll: false });
-        } catch {
-          el?.focus();
-        }
-      }
+      focusFirstBad(allErrors);
       return;
     }
     inFlightRef.current = true;
     setSubmitting(true);
-    // Reporting qualification (does NOT block submit — every lead is delivered).
-    const revenueDQ = data.annualRevenue === "Under $2M";
-    const employeesDQ = data.employeeCount === "Under 5";
-    const qualified = !(revenueDQ || employeesDQ);
-    const disqualification_reason = revenueDQ && employeesDQ
-      ? "revenue_and_headcount_below_threshold"
-      : revenueDQ
-        ? "revenue_under_2m"
-        : employeesDQ
-          ? "employees_under_5"
-          : null;
+    const qualifying = isQualifying(data.complianceTimeline);
+    const leadTier: "qualified" | "nurture" = qualifying ? "qualified" : "nurture";
+    const route =
+      routeSlug ||
+      (typeof window !== "undefined" ? window.location.pathname : "/");
     try {
       await submit({
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
         email: data.email.trim(),
         phone: data.phone.replace(/\D/g, ""),
-        companyWebsite: data.companyWebsite.trim(),
-        primaryTireBrand: data.primaryTireBrand,
-        annualRevenue: data.annualRevenue,
-        employeeCount: data.employeeCount,
-        qualified,
-        disqualification_reason,
-        route_slug:
-          routeSlug ||
-          (typeof window !== "undefined" ? window.location.pathname : "/"),
+        complianceTimeline: data.complianceTimeline,
+        discussionTopic: data.discussionTopic.trim(),
+        leadTier,
+        route_slug: route,
       });
-      fireTracking();
+      fireTracking(leadTier, route);
       setSubmitted(true);
     } catch (err) {
       console.error("Form submission error:", err);
       // Still fire tracking + show thank-you so the user isn't stranded.
-      fireTracking();
+      fireTracking(leadTier, route);
       setSubmitted(true);
     } finally {
+      inFlightRef.current = false;
       setSubmitting(false);
     }
   };
 
-  const handleNativeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-  };
-
-  const cardBase =
-    "bg-white border border-[var(--color-border)] shadow-card-lg";
+  const cardBase = "bg-white border border-[var(--color-border)] shadow-card-lg";
 
   if (submitted) {
     return (
       <div className={`${cardBase} rounded-2xl p-8 md:p-10`}>
         <div className="flex flex-col items-center text-center gap-4">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center bg-[var(--color-primary)]/10">
-            <Icon name="check" className="w-7 h-7 text-[var(--color-primary)]" strokeWidth={2.4} />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center bg-[var(--color-lime)]/15">
+            <Icon name="check" className="w-7 h-7 text-[var(--color-green-deep)]" strokeWidth={2.6} />
           </div>
-          <h3 className="font-display text-2xl md:text-3xl text-[var(--color-text)]">
-            Demo request received.
+          <h3 className="font-display text-2xl md:text-3xl text-[var(--color-charcoal)]">
+            Assessment request received.
           </h3>
           <p className="text-[var(--color-muted)] text-base leading-relaxed">
             {thankYouBody}
-          </p>
-          <p className="text-[var(--color-muted)] text-sm">
-            Prefer to talk now? Call{" "}
-            <span className="font-semibold text-[var(--color-text)] whitespace-nowrap">
-              {PHONE}
-            </span>
-            .
           </p>
         </div>
       </div>
@@ -284,19 +247,19 @@ export function FormCard({
   const showErr = (k: FieldKey) => Boolean(touched[k] && errors[k]);
   const errId = (k: FieldKey) => `${idPrefix}-${k}-error`;
   const fieldCls =
-    "w-full rounded-lg px-3.5 py-2.5 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] placeholder:text-[var(--color-muted-soft)] transition-colors focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-accent)]/40";
+    "w-full rounded-lg px-3.5 py-2.5 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-charcoal)] placeholder:text-[var(--color-muted-soft)] transition-colors focus:outline-none focus:border-[var(--color-green-deep)] focus:ring-2 focus:ring-[var(--color-lime)]/45";
   const inputCls = (k: FieldKey) => `${fieldCls} ${showErr(k) ? "lp-input-error" : ""}`;
 
   return (
     <form
-      onSubmit={handleNativeSubmit}
+      onSubmit={(e) => e.preventDefault()}
       noValidate
-      aria-label="Request a free TireServ demo"
+      aria-label="Request a free ProScore compliance assessment"
       className={`${cardBase} rounded-2xl p-6 md:p-7 space-y-3.5`}
     >
-      <div className="space-y-1 mb-1">
+      <div className="space-y-1.5 mb-1">
         <p className="eyebrow">{eyebrow}</p>
-        <h3 className="font-display text-xl md:text-[1.6rem] leading-tight text-[var(--color-text)]">
+        <h3 className="font-display text-xl md:text-[1.6rem] leading-tight text-[var(--color-charcoal)]">
           {heading}
         </h3>
         <p className="text-sm text-[var(--color-muted)] leading-snug">{subheading}</p>
@@ -381,9 +344,9 @@ export function FormCard({
         )}
       </div>
 
-      {/* Phone */}
+      {/* Phone (visitor's own number, required) */}
       <div>
-        <label htmlFor={`${idPrefix}-phone`} className="sr-only">Phone</label>
+        <label htmlFor={`${idPrefix}-phone`} className="sr-only">Phone number</label>
         <input
           ref={(el) => { fieldRefs.current.phone = el; }}
           id={`${idPrefix}-phone`}
@@ -391,8 +354,9 @@ export function FormCard({
           type="tel"
           required
           inputMode="numeric"
+          pattern="\(\d{3}\) \d{3}-\d{4}"
           autoComplete="tel"
-          placeholder="Phone (10 digits)"
+          placeholder="Phone number"
           value={data.phone}
           onChange={(e) => update("phone", formatPhone(e.target.value))}
           onBlur={(e) => markTouched("phone", e.target.value)}
@@ -408,133 +372,73 @@ export function FormCard({
         )}
       </div>
 
-      {/* Company website (optional) */}
+      {/* Compliance timeline (required) */}
       <div>
-        <label htmlFor={`${idPrefix}-companyWebsite`} className="sr-only">
-          Company website (optional)
+        <label htmlFor={`${idPrefix}-complianceTimeline`} className="sr-only">
+          When do you need compliance support?
         </label>
-        <input
-          id={`${idPrefix}-companyWebsite`}
-          name="companyWebsite"
-          type="text"
-          autoComplete="url"
-          placeholder="Company website (optional)"
-          value={data.companyWebsite}
-          onChange={(e) => update("companyWebsite", e.target.value)}
-          className={fieldCls}
+        <div className="relative">
+          <select
+            ref={(el) => { fieldRefs.current.complianceTimeline = el; }}
+            id={`${idPrefix}-complianceTimeline`}
+            name="complianceTimeline"
+            required
+            value={data.complianceTimeline}
+            onChange={(e) => {
+              update("complianceTimeline", e.target.value);
+              markTouched("complianceTimeline", e.target.value);
+            }}
+            onBlur={(e) => markTouched("complianceTimeline", e.target.value)}
+            className={`${inputCls("complianceTimeline")} appearance-none pr-9 ${data.complianceTimeline ? "" : "text-[var(--color-muted-soft)]"}`}
+            aria-invalid={showErr("complianceTimeline") || undefined}
+            aria-describedby={showErr("complianceTimeline") ? errId("complianceTimeline") : undefined}
+            disabled={submitting}
+          >
+            <option value="">When do you need compliance support?</option>
+            {COMPLIANCE_TIMELINE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value} className="text-[var(--color-charcoal)]">
+                {o.value}
+              </option>
+            ))}
+          </select>
+          <ChevronDown />
+        </div>
+        {showErr("complianceTimeline") && (
+          <p id={errId("complianceTimeline")} role="alert" aria-live="polite" className="lp-field-error">
+            {errors.complianceTimeline}
+          </p>
+        )}
+      </div>
+
+      {/* Discussion topic (optional, never blocks submit) */}
+      <div>
+        <label htmlFor={`${idPrefix}-discussionTopic`} className="sr-only">
+          What would you like to discuss? (optional)
+        </label>
+        <textarea
+          id={`${idPrefix}-discussionTopic`}
+          name="discussionTopic"
+          rows={3}
+          placeholder="What would you like to discuss? (optional)"
+          value={data.discussionTopic}
+          onChange={(e) => update("discussionTopic", e.target.value)}
+          className={`${fieldCls} resize-y min-h-[68px]`}
           disabled={submitting}
         />
-      </div>
-
-      {/* Primary tire brand (optional) */}
-      <div className="relative">
-        <label htmlFor={`${idPrefix}-primaryTireBrand`} className="sr-only">
-          Primary tire brand (optional)
-        </label>
-        <select
-          id={`${idPrefix}-primaryTireBrand`}
-          name="primaryTireBrand"
-          value={data.primaryTireBrand}
-          onChange={(e) => update("primaryTireBrand", e.target.value)}
-          className={`${fieldCls} appearance-none pr-9 ${data.primaryTireBrand ? "" : "text-[var(--color-muted-soft)]"}`}
-          disabled={submitting}
-        >
-          <option value="">Primary tire brand (optional)</option>
-          {TIRE_BRANDS.map((b) => (
-            <option key={b} value={b} className="text-[var(--color-text)]">
-              {b}
-            </option>
-          ))}
-        </select>
-        <ChevronDown />
-      </div>
-
-      {/* Qualifier note */}
-      <p className="text-xs text-[var(--color-muted)] leading-snug pt-0.5">
-        Two quick questions help us tailor the demo — every request gets a response
-        regardless of your answers.
-      </p>
-
-      {/* Annual revenue / Employee count */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor={`${idPrefix}-annualRevenue`} className="sr-only">Annual revenue</label>
-          <div className="relative">
-            <select
-              ref={(el) => { fieldRefs.current.annualRevenue = el; }}
-              id={`${idPrefix}-annualRevenue`}
-              name="annualRevenue"
-              required
-              value={data.annualRevenue}
-              onChange={(e) => {
-                update("annualRevenue", e.target.value);
-                markTouched("annualRevenue", e.target.value);
-              }}
-              onBlur={(e) => markTouched("annualRevenue", e.target.value)}
-              className={`${inputCls("annualRevenue")} appearance-none pr-9 ${data.annualRevenue ? "" : "text-[var(--color-muted-soft)]"}`}
-              aria-invalid={showErr("annualRevenue") || undefined}
-              aria-describedby={showErr("annualRevenue") ? errId("annualRevenue") : undefined}
-              disabled={submitting}
-            >
-              <option value="">Annual revenue</option>
-              {REVENUE_OPTIONS.map((o) => (
-                <option key={o} value={o} className="text-[var(--color-text)]">{o}</option>
-              ))}
-            </select>
-            <ChevronDown />
-          </div>
-          {showErr("annualRevenue") && (
-            <p id={errId("annualRevenue")} role="alert" aria-live="polite" className="lp-field-error">
-              {errors.annualRevenue}
-            </p>
-          )}
-        </div>
-        <div>
-          <label htmlFor={`${idPrefix}-employeeCount`} className="sr-only">Team size</label>
-          <div className="relative">
-            <select
-              ref={(el) => { fieldRefs.current.employeeCount = el; }}
-              id={`${idPrefix}-employeeCount`}
-              name="employeeCount"
-              required
-              value={data.employeeCount}
-              onChange={(e) => {
-                update("employeeCount", e.target.value);
-                markTouched("employeeCount", e.target.value);
-              }}
-              onBlur={(e) => markTouched("employeeCount", e.target.value)}
-              className={`${inputCls("employeeCount")} appearance-none pr-9 ${data.employeeCount ? "" : "text-[var(--color-muted-soft)]"}`}
-              aria-invalid={showErr("employeeCount") || undefined}
-              aria-describedby={showErr("employeeCount") ? errId("employeeCount") : undefined}
-              disabled={submitting}
-            >
-              <option value="">Team size</option>
-              {EMPLOYEE_OPTIONS.map((o) => (
-                <option key={o} value={o} className="text-[var(--color-text)]">{o}</option>
-              ))}
-            </select>
-            <ChevronDown />
-          </div>
-          {showErr("employeeCount") && (
-            <p id={errId("employeeCount")} role="alert" aria-live="polite" className="lp-field-error">
-              {errors.employeeCount}
-            </p>
-          )}
-        </div>
       </div>
 
       <button
         type="button"
         onClick={handleValidateAndSubmit}
         disabled={submitting || submitted}
-        className="mt-1 w-full rounded-lg px-6 py-3.5 font-semibold text-base bg-[var(--color-primary)] text-white shadow-cta transition-all hover:bg-[var(--color-primary-hover)] hover:-translate-y-0.5 active:translate-y-0 active:bg-[var(--color-primary-active)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 disabled:bg-[var(--color-primary-disabled)] disabled:cursor-not-allowed disabled:translate-y-0 flex items-center justify-center gap-2"
+        className="mt-1 w-full rounded-lg px-6 py-3.5 font-semibold text-base bg-[var(--color-lime)] text-[var(--color-ink)] shadow-cta transition-all hover:bg-[var(--color-lime-hover)] hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-lime)] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center justify-center gap-2"
       >
         {submitting ? "Submitting…" : submitLabel}
-        {!submitting && <Icon name="arrow" className="w-4 h-4" strokeWidth={2.4} />}
+        {!submitting && <Icon name="arrow" className="w-4 h-4" strokeWidth={2.6} />}
       </button>
 
       <p className="text-xs text-center leading-relaxed text-[var(--color-muted)]">
-        No spam. We&apos;ll only use your details to schedule your demo.
+        No spam. We&apos;ll only use your details to arrange your assessment.
       </p>
     </form>
   );

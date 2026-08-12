@@ -1,49 +1,30 @@
 import Image from "next/image";
-import { BRAND, CURRENT_YEAR, PHONE, PHONE_HREF } from "@/lib/content";
-import { Icon } from "@/components/icons";
+import { BRAND, CURRENT_YEAR } from "@/lib/content";
 
 export function SiteFooter() {
   return (
-    <footer className="bg-[var(--color-navy-deep)] text-white/70">
+    <footer className="bg-[var(--color-charcoal)] text-white/60">
       <div className="mx-auto max-w-7xl px-5 md:px-8 py-12">
-        <div className="grid gap-8 md:grid-cols-2 md:items-start">
-          <div>
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-[190px] md:max-w-none">
             <Image
               src="/logo-white.png"
-              alt="QBC Systems"
-              width={249}
-              height={120}
-              className="h-11 w-auto object-contain"
+              alt="ProScore"
+              width={1071}
+              height={204}
+              className="h-12 md:h-14 w-auto object-contain"
             />
-            <p className="mt-4 font-display text-lg font-semibold text-white">{BRAND.tagline}</p>
           </div>
-
-          <address className="not-italic md:text-right text-sm leading-relaxed space-y-1.5">
-            <p className="font-semibold text-white">QBC Systems, Inc.</p>
-            <p>{BRAND.address}</p>
-            <p>
-              <a
-                href={PHONE_HREF}
-                className="inline-flex items-center gap-2 hover:text-white transition-colors md:justify-end"
-                aria-label={`Call QBC Systems at ${PHONE}`}
-              >
-                <Icon name="phone" className="h-4 w-4 text-[var(--color-accent)]" strokeWidth={0} fill="currentColor" />
-                {PHONE}
-              </a>
-            </p>
-            <p>
-              <a href={BRAND.emailHref} className="hover:text-white transition-colors">
-                {BRAND.email}
-              </a>
-            </p>
-          </address>
+          <p className="font-feature-numeral text-sm font-semibold uppercase tracking-[0.14em] text-white/45">
+            {BRAND.tagline}
+          </p>
         </div>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <p>© {CURRENT_YEAR} QBC Systems, Inc. All rights reserved.</p>
-          <a href="/privacy" className="hover:text-white transition-colors">
-            Privacy Policy
-          </a>
+        <div className="mt-10 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs sm:flex-row sm:items-center sm:justify-between">
+          <p>© {CURRENT_YEAR} {BRAND.legal}. All rights reserved.</p>
+          <p className="text-white/45">
+            Compliance tracking for Prevailing Wage and Apprenticeship across IRA, OBBB, and Davis-Bacon projects.
+          </p>
         </div>
       </div>
     </footer>

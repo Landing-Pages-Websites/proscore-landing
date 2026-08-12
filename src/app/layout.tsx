@@ -1,44 +1,52 @@
 import type { Metadata } from "next";
-import { Sora, Inter } from "next/font/google";
+import { Roboto, Poppins, DM_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
-const display = Sora({
+const display = Roboto({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "700", "800"],
   variable: "--font-display-active",
   display: "swap",
 });
 
-const body = Inter({
+const body = Poppins({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   variable: "--font-body-active",
   display: "swap",
 });
 
-// === MEGA TAG CONFIG === (real QBC values — QBC opted out of Meta, so NO pixelId)
-const SITE_KEY = "5rn5f8eze80jvipf";
-const SITE_ID = "a6d7ae94-3574-4c2a-9642-4385d223e4e7";
-const GTM_ID = "GTM-5PN93D";
+const feature = DM_Sans({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-feature-active",
+  display: "swap",
+});
+
+// === MEGA TAG CONFIG === (real ProScore values, Google-only launch, so NO pixelId)
+const SITE_KEY = "9qirwolo309v37wn";
+const SITE_ID = "0b9272f3-f341-4d84-952e-0f4927d4eb89";
+const GTM_ID = "GTM-P7JPFD6S";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://go.proscore.ai"),
   title:
-    "TireServ ERP — Free Demo for Tire & Automotive Wholesale Distributors | QBC Systems",
+    "ProScore: Free Compliance Assessment for Prevailing Wage & Apprenticeship | IRA, OBBB, Davis-Bacon",
   description:
-    "TireServ is the ERP built exclusively for tire & automotive wholesale distributors. POS, inventory, purchasing, AR, AP, GL, and reporting in one cloud system with real-time wholesale integration. Purpose-built over 48 years. Get a free demo.",
+    "ProScore is a dedicated control layer for Prevailing Wage and Apprenticeship tracking across IRA, OBBB, and Davis-Bacon projects. Centralize certified payroll, apprenticeship, and compliance records for audit-ready results. Get a free compliance assessment.",
   openGraph: {
-    title: "TireServ ERP — Built Exclusively for Tire Wholesale Distributors",
+    title: "ProScore: Get Compliant. Faster.",
     description:
-      "One cloud system for POS, inventory, purchasing, and accounting — with real-time wholesale integration and mobile order entry. Purpose-built over 48 years by QBC Systems.",
-    images: ["/images/hero-warehouse.jpg"],
+      "One control layer for prevailing wage and apprenticeship tracking across IRA, OBBB, and Davis-Bacon. Real-time dashboards, automated reporting, and centralized audit-ready records. Get a free compliance assessment.",
+    images: ["/images/hero-solar-site.jpg"],
     type: "website",
   },
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",
   },
-  robots: { index: false, follow: false }, // ads LP — not indexed
+  robots: { index: false, follow: false }, // paid-ads LP, not indexed
 };
 
 export default function RootLayout({
@@ -49,7 +57,10 @@ export default function RootLayout({
   const megaTagConfig = `window.MEGA_TAG_CONFIG={siteKey:"${SITE_KEY}",siteId:"${SITE_ID}",gtmId:"${GTM_ID}"};window.API_ENDPOINT="https://optimizer.gomega.ai";window.TRACKING_API_ENDPOINT="https://events-api.gomega.ai";`;
 
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${feature.variable}`}
+    >
       <head>
         <meta name="mega-site-id" content={SITE_ID} />
         <script
@@ -65,7 +76,7 @@ export default function RootLayout({
       </head>
       <body className="bg-[var(--color-bg)] text-[var(--color-text)] antialiased">
         {children}
-        {/* CallTrackingMetrics — universal Mega account (never remove) */}
+        {/* CallTrackingMetrics, universal Mega account (never remove) */}
         <Script
           src="https://572388.tctm.co/t.js"
           strategy="afterInteractive"

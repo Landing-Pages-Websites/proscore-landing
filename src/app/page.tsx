@@ -4,11 +4,16 @@ import { useTracking } from "@/hooks/useTracking";
 import { QueryParamPersistence } from "@/components/QueryParamPersistence";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
-import { PainPoints } from "@/components/PainPoints";
-import { Capabilities } from "@/components/Capabilities";
-import { WhyPurposeBuilt } from "@/components/WhyPurposeBuilt";
-import { ProofBar } from "@/components/ProofBar";
+import { TrustedBy } from "@/components/TrustedBy";
+import { TheProblem } from "@/components/TheProblem";
+import { Platform } from "@/components/Platform";
+import { FasterPayments } from "@/components/FasterPayments";
+import { Workforce } from "@/components/Workforce";
+import { ForEpcs } from "@/components/ForEpcs";
+import { ExpertSupport } from "@/components/ExpertSupport";
+import { Proof } from "@/components/Proof";
 import { Faq } from "@/components/Faq";
+import { Assessment } from "@/components/Assessment";
 import { FinalCta } from "@/components/FinalCta";
 import { SiteFooter } from "@/components/SiteFooter";
 import { FloatingCTA } from "@/components/FloatingCTA";
@@ -26,11 +31,16 @@ export default function Page() {
       <QueryParamPersistence />
       <Header />
       <Hero />
-      <PainPoints />
-      <Capabilities />
-      <WhyPurposeBuilt />
-      <ProofBar />
+      <TrustedBy />
+      <TheProblem />
+      <Platform />
+      <FasterPayments />
+      <Workforce />
+      <ForEpcs />
+      <ExpertSupport />
+      <Proof />
       <Faq />
+      <Assessment />
       <FinalCta />
       <SiteFooter />
       <FloatingCTA />

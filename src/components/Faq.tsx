@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Reveal } from "@/components/Reveal";
 import { DualCTA } from "@/components/DualCTA";
+import { SectionHeading } from "@/components/SectionHeading";
 import { Icon } from "@/components/icons";
 import { FAQ } from "@/lib/content";
 
@@ -12,12 +13,11 @@ export function Faq() {
   return (
     <section id="faq" className="relative py-20 md:py-28 bg-white">
       <div className="mx-auto max-w-4xl px-5 md:px-8">
-        <Reveal className="text-center">
-          <p className="eyebrow">Before you request a demo</p>
-          <h2 className="mt-3 font-display text-[2rem] md:text-4xl lg:text-[2.7rem] leading-[1.1] text-[var(--color-text)]">
-            Questions distributors ask us.
-          </h2>
-        </Reveal>
+        <SectionHeading
+          eyebrow="Before you request your assessment"
+          heading="Questions compliance teams ask us."
+          align="center"
+        />
 
         <div className="mt-12 space-y-3">
           {FAQ.map((item, i) => {
@@ -27,8 +27,8 @@ export function Faq() {
                 <div
                   className={`rounded-xl border transition-colors ${
                     isOpen
-                      ? "border-[var(--color-primary)] bg-white shadow-card"
-                      : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/50"
+                      ? "border-[var(--color-lime)] bg-white shadow-card"
+                      : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-lime)]/60"
                   }`}
                 >
                   <h3>
@@ -36,14 +36,14 @@ export function Faq() {
                       type="button"
                       onClick={() => setOpen(isOpen ? null : i)}
                       aria-expanded={isOpen}
-                      className="flex w-full items-start justify-between gap-4 p-5 md:p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded-xl"
+                      className="flex w-full items-start justify-between gap-4 p-5 md:p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-lime)] rounded-xl"
                     >
-                      <span className="font-display text-lg md:text-xl leading-snug text-[var(--color-text)]">
+                      <span className="font-display text-lg md:text-xl leading-snug text-[var(--color-ink)]">
                         {item.q}
                       </span>
                       <Icon
                         name="plus"
-                        className={`mt-1 h-5 w-5 shrink-0 text-[var(--color-primary)] transition-transform duration-300 ${
+                        className={`mt-1 h-5 w-5 shrink-0 text-[var(--color-green-deep)] transition-transform duration-300 ${
                           isOpen ? "rotate-45" : ""
                         }`}
                         strokeWidth={2.2}
@@ -68,7 +68,7 @@ export function Faq() {
         </div>
 
         <Reveal delay={120}>
-          <DualCTA align="center" />
+          <DualCTA secondaryHref="#platform" />
         </Reveal>
       </div>
     </section>
