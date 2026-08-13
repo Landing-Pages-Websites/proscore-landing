@@ -58,17 +58,17 @@ const REQUIRED_ORDER: FieldKey[] = [
 function validateField(key: FieldKey, value: string | boolean): string | undefined {
   switch (key) {
     case "firstName":
-      return value.trim() ? undefined : "First name is required.";
+      return String(value).trim() ? undefined : "First name is required.";
     case "lastName":
-      return value.trim() ? undefined : "Last name is required.";
+      return String(value).trim() ? undefined : "Last name is required.";
     case "email": {
-      const v = value.trim();
+      const v = String(value).trim();
       if (!v) return "Email address is required.";
       if (!EMAIL_RE.test(v)) return "Please enter a valid email address.";
       return undefined;
     }
     case "phone": {
-      const digits = value.replace(/\D/g, "");
+      const digits = String(value).replace(/\D/g, "");
       if (!digits) return "Phone number is required.";
       if (digits.length !== 10) return "Please enter a valid 10-digit phone number.";
       if (!NANP_RE.test(digits)) return "Please enter a valid US phone number.";
