@@ -22,7 +22,7 @@ const NANP_RE = /^[2-9](?!11)\d{2}[2-9](?!11)\d{2}\d{4}$/;
 const SUBMIT_ERROR_MESSAGE =
   "Something went wrong sending your request. Please try again, or email us at info@proscore.ai.";
 
-type FieldKey = "firstName" | "lastName" | "email" | "phone" | "complianceTimeline";
+type FieldKey = "firstName" | "lastName" | "email" | "phone" | "complianceTimeline" | "smsConsent";
 
 interface FormState {
   firstName: string;
@@ -31,6 +31,7 @@ interface FormState {
   phone: string;
   complianceTimeline: string;
   discussionTopic: string;
+  smsConsent: boolean;
 }
 
 const INITIAL: FormState = {
@@ -40,6 +41,7 @@ const INITIAL: FormState = {
   phone: "",
   complianceTimeline: "",
   discussionTopic: "",
+  smsConsent: false,
 };
 
 type FieldErrors = Partial<Record<FieldKey, string>>;
@@ -50,9 +52,10 @@ const REQUIRED_ORDER: FieldKey[] = [
   "email",
   "phone",
   "complianceTimeline",
+  "smsConsent",
 ];
 
-function validateField(key: FieldKey, value: string): string | undefined {
+function validateField(key: FieldKey, value: string | boolean): string | undefined {
   switch (key) {
     case "firstName":
       return value.trim() ? undefined : "First name is required.";
@@ -73,6 +76,8 @@ function validateField(key: FieldKey, value: string): string | undefined {
     }
     case "complianceTimeline":
       return value ? undefined : "Please choose a timeline.";
+    case "smsConsent":
+      return value ? undefined : "Please agree to the SMS/Text Messaging consent terms.";
   }
 }
 
@@ -193,6 +198,7 @@ export function FormCard({
         email: true,
         phone: true,
         complianceTimeline: true,
+        smsConsent: true,
       });
       focusFirstBad(allErrors);
       return;
@@ -206,16 +212,20 @@ export function FormCard({
       routeSlug ||
       (typeof window !== "undefined" ? window.location.pathname : "/");
     try {
-      const res = await submit({
+      const submissionData = {
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
         email: data.email.trim(),
         phone: data.phone.replace(/\D/g, ""),
         complianceTimeline: data.complianceTimeline,
         discussionTopic: data.discussionTopic.trim(),
+        smsConsent: data.smsConsent,
+        smsConsentText:
+          "I agree to receive SMS/text messages from ProScore regarding my inquiry, assessment, appointments, reminders, and related service updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. Consent is not a condition of purchase.",
         leadTier,
         route_slug: route,
-      });
+      };
+      const res = await submit(submissionData);
       // A 2xx with a body that isn't {ok:true} is still a dropped lead. Only
       // confirmed success fires conversions and shows the thank-you card.
       if (res?.ok !== true) {
@@ -435,6 +445,62 @@ export function FormCard({
           className={`${fieldCls} resize-y min-h-[68px]`}
           disabled={submitting}
         />
+      </div>
+
+      {/* Required SMS/Text Messaging consent */}
+      <div>
+        <label
+          htmlFor={`${idPrefix}-smsConsent`}
+          className="flex items-start gap-2.5 text-xs leading-relaxed text-[var(--color-muted)]"
+        >
+          <input
+            ref={(el) => { fieldRefs.current.smsConsent = el; }}
+            id={`${idPrefix}-smsConsent`}
+            name="smsConsent"
+            type="checkbox"
+            required
+            checked={data.smsConsent}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setData((d) => ({ ...d, smsConsent: checked }));
+              markTouched("smsConsent", checked);
+            }}
+            onBlur={(e) => markTouched("smsConsent", e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--color-border)] accent-[var(--color-green-deep)] focus:ring-2 focus:ring-[var(--color-lime)]/45"
+            aria-invalid={showErr("smsConsent") || undefined}
+            aria-describedby={showErr("smsConsent") ? errId("smsConsent") : undefined}
+            disabled={submitting}
+          />
+          <span>
+            I agree to receive SMS/text messages from ProScore regarding my inquiry,
+            assessment, appointments, reminders, and related service updates. Message
+            frequency varies. Message and data rates may apply. Reply STOP to opt out or
+            HELP for help. Consent is not a condition of purchase. View the{" "}
+            <a
+              href="https://proscore.ai/privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[var(--color-green-deep)] underline"
+            >
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://proscore.ai/terms-conditions/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[var(--color-green-deep)] underline"
+            >
+              Terms &amp; Conditions
+            </a>
+            .
+          </span>
+        </label>
+        {showErr("smsConsent") && (
+          <p id={errId("smsConsent")} role="alert" aria-live="polite" className="lp-field-error">
+            {errors.smsConsent}
+          </p>
+        )}
       </div>
 
       {submitError && (
