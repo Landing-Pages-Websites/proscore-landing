@@ -149,7 +149,7 @@ export function FormCard({
     });
   };
 
-  const markTouched = (k: FieldKey, currentValue: string) => {
+  const markTouched = (k: FieldKey, currentValue: string | boolean) => {
     setTouched((t) => ({ ...t, [k]: true }));
     const err = validateField(k, currentValue);
     setErrors((prev) => {
