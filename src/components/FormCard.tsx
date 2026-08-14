@@ -52,7 +52,6 @@ const REQUIRED_ORDER: FieldKey[] = [
   "email",
   "phone",
   "complianceTimeline",
-  "smsConsent",
 ];
 
 function validateField(key: FieldKey, value: string | boolean): string | undefined {
@@ -77,7 +76,7 @@ function validateField(key: FieldKey, value: string | boolean): string | undefin
     case "complianceTimeline":
       return value ? undefined : "Please choose a timeline.";
     case "smsConsent":
-      return value ? undefined : "Please agree to the SMS/Text Messaging consent terms.";
+      return undefined;
   }
 }
 
@@ -198,7 +197,6 @@ export function FormCard({
         email: true,
         phone: true,
         complianceTimeline: true,
-        smsConsent: true,
       });
       focusFirstBad(allErrors);
       return;
@@ -220,8 +218,9 @@ export function FormCard({
         complianceTimeline: data.complianceTimeline,
         discussionTopic: data.discussionTopic.trim(),
         smsConsent: data.smsConsent,
-        smsConsentText:
-          "I agree to receive SMS/text messages from ProScore regarding my inquiry, assessment, appointments, reminders, and related service updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. Consent is not a condition of purchase.",
+        smsConsentText: data.smsConsent
+          ? "I agree to receive SMS/text messages from ProScore regarding my inquiry, assessment, appointments, reminders, and related service updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. Consent is not a condition of purchase."
+          : "Not provided",
         leadTier,
         route_slug: route,
       };
@@ -447,7 +446,7 @@ export function FormCard({
         />
       </div>
 
-      {/* Required SMS/Text Messaging consent */}
+      {/* Optional SMS/Text Messaging consent */}
       <div>
         <label
           htmlFor={`${idPrefix}-smsConsent`}
@@ -458,7 +457,6 @@ export function FormCard({
             id={`${idPrefix}-smsConsent`}
             name="smsConsent"
             type="checkbox"
-            required
             checked={data.smsConsent}
             onChange={(e) => {
               const checked = e.target.checked;
