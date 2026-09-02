@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Reveal } from "@/components/Reveal";
 import { FormCard } from "@/components/FormCard";
 import { Icon } from "@/components/icons";
-import { HERO } from "@/lib/content";
+import { HERO, HERO_QUALIFIER } from "@/lib/content";
 
 export function Hero() {
   return (
@@ -53,6 +53,25 @@ export function Hero() {
               heading="Get compliant. Faster."
               subheading="Tell us where your projects stand. A ProScore compliance specialist follows up by email. No cost, no obligation."
             />
+          </Reveal>
+          <Reveal delay={180}>
+            <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-white/90 px-4 py-3.5 shadow-[0_1px_2px_rgba(21,21,21,0.05)]">
+              <p className="flex gap-2 text-xs leading-relaxed text-[var(--color-charcoal)]">
+                <Icon
+                  name="check"
+                  className="mt-0.5 w-3.5 h-3.5 shrink-0 text-[var(--color-green-deep)]"
+                  strokeWidth={2.8}
+                />
+                <span>
+                  <span className="font-semibold">Who it&apos;s for:</span>{" "}
+                  {HERO_QUALIFIER.forWho}
+                </span>
+              </p>
+              <p className="mt-2 pl-[1.375rem] text-xs leading-relaxed text-[var(--color-muted)]">
+                <span className="font-semibold">Not for:</span>{" "}
+                {HERO_QUALIFIER.notFor}
+              </p>
+            </div>
           </Reveal>
         </div>
 

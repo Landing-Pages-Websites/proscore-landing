@@ -21,15 +21,23 @@ export const CURRENT_YEAR = new Date().getFullYear();
 // ─── Hero ───
 export const HERO = {
   kicker: "Get Compliant. Faster.",
-  h1: "Prevailing wage and apprenticeship compliance, tracked in one place.",
+  h1: "Prevailing-wage and apprenticeship compliance software for complex projects.",
   subhead:
-    "ProScore is a dedicated control layer for Prevailing Wage and Apprenticeship tracking across IRA, OBBB, and Davis-Bacon projects. Capture, validate, and keep every labor hour audit-ready with real-time dashboards and automated reporting.",
+    "ProScore helps contractors, EPCs, and developers manage and document prevailing-wage and apprenticeship requirements across IRA, OBBB, and Davis-Bacon projects. Book a free assessment with a ProScore compliance specialist to see exactly where your projects stand.",
   chips: [
     "43 states supported",
     "10M+ labor hours processed",
     "$25B+ in funding protected",
     "IRA, OBBB & Davis-Bacon",
   ],
+};
+
+// ─── Near-form qualifier (who the free assessment is / is not for) ───
+export const HERO_QUALIFIER = {
+  forWho:
+    "For contractors, EPCs, and developers managing active or planned IRA, OBBB, or Davis-Bacon projects.",
+  notFor:
+    "Not a free prevailing-wage rate lookup, a WH-347 or form download, or an immigration, H-1B, or PERM wage checker.",
 };
 
 // ─── Trusted-by band (verbatim wording from proscore.ai) ───
