@@ -31,7 +31,6 @@ interface FormState {
   phone: string;
   complianceTimeline: string;
   discussionTopic: string;
-  smsConsent: boolean;
 }
 
 const INITIAL: FormState = {
@@ -41,14 +40,7 @@ const INITIAL: FormState = {
   phone: "",
   complianceTimeline: "",
   discussionTopic: "",
-  smsConsent: false,
 };
-
-const PRIVACY_POLICY_URL = "https://proscore.ai/privacy-policy/";
-const TERMS_URL = "https://proscore.ai/terms-conditions/";
-
-const SMS_CONSENT_TEXT =
-  "By checking this box, you agree to receive SMS customer-care messages from ProScore, including inquiry responses, assessment follow-ups, appointment confirmations, reminders, and service updates. Message frequency may vary. Message and data rates may apply. Reply STOP to opt out. Reply HELP for help. Consent is not a condition of purchase. Your mobile information will not be sold or shared with third parties for promotional or marketing purposes.";
 
 type FieldErrors = Partial<Record<FieldKey, string>>;
 
@@ -221,10 +213,6 @@ export function FormCard({
         phone: data.phone.replace(/\D/g, ""),
         complianceTimeline: data.complianceTimeline,
         discussionTopic: data.discussionTopic.trim(),
-        smsConsent: data.smsConsent,
-        smsConsentText: data.smsConsent
-          ? `${SMS_CONSENT_TEXT} Privacy Policy: ${PRIVACY_POLICY_URL} | Terms & Conditions: ${TERMS_URL}`
-          : "Not provided",
         leadTier,
         route_slug: route,
       });
@@ -447,47 +435,6 @@ export function FormCard({
           className={`${fieldCls} resize-y min-h-[68px]`}
           disabled={submitting}
         />
-      </div>
-
-      {/* SMS opt-in (optional — never required, never blocks submit) */}
-      <div>
-        <label
-          htmlFor={`${idPrefix}-smsConsent`}
-          className="flex items-start gap-2.5 cursor-pointer text-xs leading-relaxed text-[var(--color-muted)]"
-        >
-          <input
-            id={`${idPrefix}-smsConsent`}
-            name="smsConsent"
-            type="checkbox"
-            checked={data.smsConsent}
-            onChange={(e) => setData((d) => ({ ...d, smsConsent: e.target.checked }))}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--color-border)] accent-[var(--color-green-deep)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-lime)]/45"
-            disabled={submitting}
-          />
-          <span>
-            {SMS_CONSENT_TEXT}{" "}
-            <a
-              href={PRIVACY_POLICY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[var(--color-green-deep)] underline"
-            >
-              Privacy Policy
-            </a>
-            {" | "}
-            <a
-              href={TERMS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[var(--color-green-deep)] underline"
-            >
-              Terms &amp; Conditions
-            </a>
-          </span>
-        </label>
-        <p className="mt-1.5 pl-[1.625rem] text-[11px] leading-relaxed text-[var(--color-muted-soft)]">
-          Optional. You can submit this form without opting in to text messages.
-        </p>
       </div>
 
       {submitError && (
